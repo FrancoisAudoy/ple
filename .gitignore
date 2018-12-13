@@ -1,0 +1,9 @@
+#eclipse
+**/.settings
+**/.classpath
+**/.project
+*.tgz
+
+#emacs
+*~
+.*~

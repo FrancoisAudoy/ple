@@ -1,27 +1,50 @@
 package bigdata;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.PairFunction;
 
-import scala.Tuple2;
+
 
 public class TPSpark {
-
+	static String PathDir = "dem3/";
+	
 	public static void main(String[] args) {
-		
-		
-		
+
+
+
 		SparkConf conf = new SparkConf().setAppName("Projet PLE");
 		JavaSparkContext context = new JavaSparkContext(conf);
+
+		FileSystem fs = null;
+		FileStatus [] listFile = null ;
+		ArrayList<String> pathFile = new ArrayList<>();
 		
-		JavaPairRDD<String, String> filePairRddSS = context.wholeTextFiles("hdfs://young:9000/user/raw_data/dem3/");
+		try {
+			fs = FileSystem.get(new Configuration());
+			listFile = fs.listStatus(new Path(PathDir));
+			for(FileStatus status : listFile)
+				pathFile.add(status.getPath().toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();			
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
 		
-		JavaRDD<String> cle = filePairRddSS.values();
-		
-		System.out.println(cle.count());
+		JavaRDD<String> rddFileName = context.parallelize(pathFile);
+
+		System.out.println(rddFileName.count());
+
 		/*
 		JavaPairRDD<String, Tuple2<Integer, Integer>> filePairRddSTII = filePairRddSS.keys().mapToPair(new PairFunction<String, String, Tuple2<Integer, Integer>>(){
 			public Tuple2<String, Tuple2<Integer,Integer>> call(String line){
@@ -34,9 +57,9 @@ public class TPSpark {
 				return new Tuple2<String, Tuple2<Integer, Integer>>(line,  new Tuple2<Integer, Integer>(lat, lon));
 			}
 		});
-		
+
 		System.out.println(filePairRddSTII.first()._1);
 		System.out.println(filePairRddSTII.first()._2._1+" "+filePairRddSTII.first()._2._2);*/
 	}
-	
+
 }

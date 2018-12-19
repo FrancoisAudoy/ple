@@ -12,8 +12,19 @@
   		<artifactId>spark-core_2.10</artifactId>
   		<version>2.0.1</version>
   	</dependency>
+  	<dependency>
+  		<groupId>org.apache.hadoop</groupId>
+  		<artifactId>hadoop-common</artifactId>
+  		<version>2.7.3</version>
+  	</dependency>
+	<dependency>
+  		<groupId>org.apache.hbase</groupId>
+  		<artifactId>hbase-client</artifactId>
+  		<version>1.2.6</version>
+  	</dependency>
   </dependencies>
   <build>
+  <sourceDirectory>bigdata</sourceDirectory>
   	<plugins>
   		<plugin>
   			<groupId>org.apache.maven.plugins</groupId>

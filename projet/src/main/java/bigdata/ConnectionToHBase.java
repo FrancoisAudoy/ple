@@ -52,27 +52,37 @@ public final class ConnectionToHBase implements Serializable{
 
 	}
 
+	public static Configuration getHBaseConf() {
+		Configuration conf =  HBaseConfiguration.create();
+		conf.set("hbase.zookeeper.qourum", "young:9000");
+		conf.set("hbase.mapred.outputtable", "TilesAF");
+		conf.set("mapreduce.outputformat.class", "org.apache.hadoop.hbase.mapreduce.TableOutputFormat");
+		conf.set("mapreduce.job.key.class", "org.apache.hadoop.hbase.io.ImmutableBytesWritable");
+		conf.set("mapreduce.job.output.value.class", "org.apache.hadoop.io.Writable");
+		conf.set("mapreduce.output.fileoutputformat.outputdir", "tmp");
+		return conf;
+	}
+	
 	public static Connection connectTable() throws IOException {
 		Configuration conf = HBaseConfiguration.create();
 		Connection connection = ConnectionFactory.createConnection(conf);
 		return connection;
 	}
 
-	public static void putData(Connection connection, String lonLat, byte[] data) throws IllegalArgumentException, IOException {
-		HTable table = (HTable) connection.getTable(TableName.valueOf(Table_Name));
-		/*
-		saveAsNewAPIHadoopDataset
-		 */
+	public static Put putData(Connection connection, String lonLat, byte[] data) throws IllegalArgumentException, IOException {
+		//HTable table = (HTable) connection.getTable(TableName.valueOf(Table_Name));
+		
 		Put put = new Put(Bytes.toBytes(lonLat));
 
 		String [] lonLatparsed = StringUtils.extractLonLat(lonLat);
 
 		put.addColumn(PositionFamilyName, ("lon").getBytes(), lonLatparsed[0].getBytes());
 		put.addColumn(PositionFamilyName, ("lat").getBytes(), lonLatparsed[1].getBytes());
-		put.addColumn(PositionFamilyName, ("img").getBytes(), data);
+		put.addColumn(DataFamilyName, ("img").getBytes(), data);
 		
-		table.put(put);
+		return put;
+		/*table.put(put);
 		table.flushCommits();
-		
+		*/
 	}
 }

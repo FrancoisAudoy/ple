@@ -22,9 +22,10 @@
   		<artifactId>hbase-client</artifactId>
   		<version>1.2.6</version>
   	</dependency>
+
   </dependencies>
   <build>
-  <sourceDirectory>bigdata</sourceDirectory>
+  	<sourceDirectory>src/main/java/bigdata</sourceDirectory>
   	<plugins>
   		<plugin>
   			<groupId>org.apache.maven.plugins</groupId>
@@ -40,4 +41,8 @@
   		</plugin>
   	</plugins>
   </build>
+	<properties>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
 </project>

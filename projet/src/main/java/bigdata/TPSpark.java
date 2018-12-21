@@ -34,8 +34,8 @@ public class TPSpark {
 	private static final int Green = 0x00FF00;
 	private static final int Red = 0xFF0000;
 
-	static int min = Integer.MAX_VALUE;
-	static int max = Integer.MIN_VALUE;
+	static int min = -35000;
+	static int max = 9000;
 
 
 	public static int[] ConvetHighToRGB(int [] high) {
@@ -43,7 +43,7 @@ public class TPSpark {
 
 		for(int i = 0; i < high.length; ++i) {
 			int loged = high[i]; //(int) Math.log(high[i]) / (int) Math.log(MaxHigh);
-			result[i] = (loged * Red) | (loged * Green) | (loged * Blue);
+			result[i] = StringUtils.getRGBForThisHigh(loged);
 		}
 
 		return result;
@@ -64,6 +64,7 @@ public class TPSpark {
 
 
 
+
 		JavaPairRDD<String, int[]> pairRddConvert = rddBin.mapToPair(fileToConvert -> {
 			byte [] binary = fileToConvert._2.toArray();
 			int [] high = new int[Dem3Size * Dem3Size];
@@ -80,6 +81,8 @@ public class TPSpark {
 
 			return new Tuple2<String, int[]>(fileToConvert._1, high);
 		});
+
+		StringUtils.generatePalette(min, max);
 
 		pairRddConvert.foreach(file -> {
 			BufferedImage img = new BufferedImage(Dem3Size, Dem3Size, BufferedImage.TYPE_INT_RGB);

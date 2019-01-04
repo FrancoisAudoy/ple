@@ -2,7 +2,11 @@
 **/.settings
 **/.classpath
 **/.project
+#Pas d'archive
 *.tgz
+
+#Intellij
+**/.idea
 
 #emacs
 *~

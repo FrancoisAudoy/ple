@@ -2,19 +2,12 @@ package bigdata;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
-
 import javax.imageio.ImageIO;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.util.ByteBufferArray;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.Time;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -61,20 +54,17 @@ public class TPSpark {
 			FileStatus fileStatus=fs.getFileStatus(new Path(file._1));
 			return fileStatus.getModificationTime() < Time.now();
 		});
-
-
-
-
+		
 		JavaPairRDD<String, int[]> pairRddConvert = rddBin.mapToPair(fileToConvert -> {
 			byte [] binary = fileToConvert._2.toArray();
 			int [] high = new int[Dem3Size * Dem3Size];
 
-			for(int i =0; i < Dem3Size * Dem3Size; i+=2) {
+			for(int i =0, j =0; i < Dem3Size * Dem3Size; i+=2, j++) {
 				byte [] toConvert = new byte[2];
 				toConvert [0] = binary[i];
 				toConvert [1] = binary[i + 1];
 				int converted = (toConvert[0] << 8) | toConvert[1];
-				high[i] = converted;
+				high[j] = converted;
 				min = Integer.min(converted, min);
 				max = Integer.max(converted, max);
 			}
@@ -90,6 +80,7 @@ public class TPSpark {
 			ImageIO.write(img, "png", new File(StringUtils.extractNameFromPath(file._1) + ".png"));
 		});
 
+		//pairRddConvert.toDebugString(); peut-être utile, ça affiche la mémoire prise par le rdd
 
 		//C'est okey, ça marche => mettre ça dans une fonction
 		/*Connection c;

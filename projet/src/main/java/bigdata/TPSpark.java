@@ -1,8 +1,14 @@
 package bigdata;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -21,7 +27,7 @@ import scala.Tuple2;
 public class TPSpark {
 
 	private static final String PathDir = "dem3/";
-	private static final int Dem3Size = 1201;
+	private static final int Dem3Size = 1201; //On va tricher un peu
 	private static final int MaxHigh = 8848;
 	private static final int Blue = 0x0000FF;
 	private static final int Green = 0x00FF00;
@@ -74,11 +80,37 @@ public class TPSpark {
 
 		StringUtils.generatePalette(min, max);
 
+		JavaPairRDD<String, byte[]> pairRddPNGBinary = pairRddConvert.mapToPair(file -> {
+			ByteArrayOutputStream fileCompressed = new ByteArrayOutputStream();
+			ImageOutputStream outputStream = ImageIO.createImageOutputStream(fileCompressed);
+			
+			ImageWriter pngWriter = ImageIO.getImageWritersByFormatName("png").next();
+			
+			pngWriter.setOutput(outputStream);
+			
+			BufferedImage img = new BufferedImage(Dem3Size, Dem3Size, BufferedImage.TYPE_INT_RGB);
+			img.setRGB(0, 0, Dem3Size, Dem3Size, ConvetHighToRGB(file._2), 0, Dem3Size);
+
+			pngWriter.write(new IIOImage(img, null, null));
+
+			pngWriter.dispose();
+
+			return new Tuple2<String, byte[]>(file._1, fileCompressed.toByteArray());
+		});
+
+		//Pour debug
+		pairRddPNGBinary.foreach(png -> 	{
+			ByteArrayInputStream bis = new ByteArrayInputStream(png._2);
+			BufferedImage img = ImageIO.read(bis);
+			ImageIO.write(img, "png", new File(StringUtils.extractNameFromPath(png._1) + ".png"));
+		});
+		
+		/*
 		pairRddConvert.foreach(file -> {
 			BufferedImage img = new BufferedImage(Dem3Size, Dem3Size, BufferedImage.TYPE_INT_RGB);
 			img.setRGB(0, 0, Dem3Size, Dem3Size, ConvetHighToRGB(file._2), 0, Dem3Size);
 			ImageIO.write(img, "png", new File(StringUtils.extractNameFromPath(file._1) + ".png"));
-		});
+		});*/
 
 		//pairRddConvert.toDebugString(); peut-être utile, ça affiche la mémoire prise par le rdd
 

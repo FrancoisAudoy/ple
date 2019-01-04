@@ -54,7 +54,7 @@ public final class ConnectionToHBase implements Serializable{
 
 	public static Configuration getHBaseConf() {
 		Configuration conf =  HBaseConfiguration.create();
-		conf.set("hbase.zookeeper.qourum", "young:9000");
+		conf.set("hbase.zookeeper.qourum", "ripoux:9000");
 		conf.set("hbase.mapred.outputtable", "TilesAF");
 		conf.set("mapreduce.outputformat.class", "org.apache.hadoop.hbase.mapreduce.TableOutputFormat");
 		conf.set("mapreduce.job.key.class", "org.apache.hadoop.hbase.io.ImmutableBytesWritable");

@@ -21,8 +21,8 @@ public final class StringUtils {
 	private static final int MIDDLEHIGH=60;
 	private static final int HIGH=30;
 	private static final int TOOHIGH=0;
-	private static final float SATMIN=1.f;
-	private static final float SATMAX=.35f;
+	private static final float SATMAX=1.f;
+	private static final float SATMIN=.35f;
 	private static final float BRIMIN=.15f;
 	private static final float BRIMAX=.5f;
 
@@ -75,30 +75,30 @@ public final class StringUtils {
 	}
 
 	private static int augCouleur(int color, int nb, int ite) {
-		float all=(SATMIN-SATMAX)+(BRIMAX-BRIMIN);
+		float all=(SATMAX-SATMIN)+(BRIMAX-BRIMIN);
 		float ecart=all/nb;
 		float sat=0.f;
 		float bri=0.f;
 		if(color==NEGHIGH){
-			sat=SATMIN;
+			sat=SATMAX;
 			bri=BRIMIN;
 			if(ite<(nb/10)*3.5){
 				bri+=ite*ecart;
 			}else{
 				bri=BRIMAX;
-				sat+=ite*ecart;
+				sat-=ite*ecart;
 			}
 		}else if(color==TOOHIGH) {
 			sat=0.f;
 			ecart=0.6f/nb;
 			bri=BRIMAX-ite*ecart;
 		}else{
-			sat=SATMAX;
+			sat=SATMIN;
 			bri=BRIMAX;
 			if(ite<(nb/10)*5.5){
-				sat-=ite*ecart;
+				sat+=ite*ecart;
 			}else{
-				sat=SATMIN;
+				sat=SATMAX;
 				bri-=ite*ecart;
 			}
 		}

@@ -85,7 +85,8 @@ public final class StringUtils {
 			if(ite<(nb/10)*4){
 				bri+=ite*ecart;
 			}else{
-				sat+=ite*ecart;
+				bri=BRIMAX;
+				sat-=ite*ecart;
 			}
 		}else if(color==TOOHIGH) {
 			sat=0.f;
@@ -95,8 +96,9 @@ public final class StringUtils {
 			sat=SATMAX;
 			bri=BRIMAX;
 			if(ite<(nb/10)*6){
-				sat-=ite*ecart;
+				sat+=ite*ecart;
 			}else{
+				sat=SATMIN;
 				bri-=ite*ecart;
 			}
 		}

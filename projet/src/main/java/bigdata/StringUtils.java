@@ -22,8 +22,8 @@ public final class StringUtils {
 	private static final int HIGH=30;
 	private static final int TOOHIGH=0;
 	private static final float SATMIN=1.f;
-	private static final float SATMAX=.4f;
-	private static final float BRIMIN=.1f;
+	private static final float SATMAX=.35f;
+	private static final float BRIMIN=.15f;
 	private static final float BRIMAX=.5f;
 
 
@@ -82,7 +82,7 @@ public final class StringUtils {
 		if(color==NEGHIGH){
 			sat=SATMIN;
 			bri=BRIMIN;
-			if(ite<(nb/10)*4){
+			if(ite<(nb/10)*3.5){
 				bri+=ite*ecart;
 			}else{
 				bri=BRIMAX;

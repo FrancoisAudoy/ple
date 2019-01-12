@@ -87,6 +87,10 @@ public final class StringUtils {
 			}else{
 				sat+=ite*ecart;
 			}
+		}else if(color==TOOHIGH) {
+			sat=0.f;
+			ecart=0.6f/nb;
+			bri=BRIMAX-ite*ecart;
 		}else{
 			sat=SATMAX;
 			bri=BRIMAX;

@@ -95,7 +95,7 @@ public final class StringUtils {
 		}else{
 			sat=SATMAX;
 			bri=BRIMAX;
-			if(ite<(nb/10)*6){
+			if(ite<(nb/10)*5.5){
 				sat+=ite*ecart;
 			}else{
 				sat=SATMIN;

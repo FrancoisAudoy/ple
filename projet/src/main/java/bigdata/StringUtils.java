@@ -20,7 +20,7 @@ public final class StringUtils {
 	private static final int LOWHIGH=120;
 	private static final int MIDDLEHIGH=60;
 	private static final int HIGH=30;
-	private static final int TOOHIGH=0;
+	private static final int TOOHIGH=300;
 	private static final float SATMIN=1.f;
 	private static final float SATMAX=.35f;
 	private static final float BRIMIN=.15f;
@@ -85,7 +85,7 @@ public final class StringUtils {
 			if(ite<(nb/10)*3.5){
 				bri+=ite*ecart;
 			}else{
-				//bri=BRIMAX;
+				bri=BRIMAX;
 				sat-=ite*ecart;
 			}
 		}else if(color==TOOHIGH) {
@@ -98,7 +98,7 @@ public final class StringUtils {
 			if(ite<(nb/10)*5.5){
 				sat+=ite*ecart;
 			}else{
-				//sat=SATMIN;
+				sat=SATMIN;
 				bri-=ite*ecart;
 			}
 		}

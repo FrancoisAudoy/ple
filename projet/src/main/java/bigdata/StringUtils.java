@@ -88,10 +88,10 @@ public final class StringUtils {
 				bri=BRIMAX;
 				sat-=ite*ecart;
 			}
-		//}else if(color==TOOHIGH) {
-			//sat=0.f;
-			//ecart=0.6f/nb;
-			//bri=BRIMAX-ite*ecart;
+		}else if(color==TOOHIGH) {
+			sat=0.f;
+			ecart=0.6f/nb;
+			bri=BRIMAX-ite*ecart;
 		}else{
 			sat=SATMIN;
 			bri=BRIMAX;
@@ -102,7 +102,7 @@ public final class StringUtils {
 				bri-=ite*ecart;
 			}
 		}
-		return Color.getHSBColor(color, sat, bri).getRGB();
+		return Color.getHSBColor(color/360f, sat, bri).getRGB();
 	}
 
 	public static int getRGBForThisHigh(int high) {

@@ -27,7 +27,9 @@ import scala.Tuple2;
 public class TPSpark {
 
 	private static final String PathDir = "dem3/";
-	private static final int Dem3Size = 1201; //On va tricher un peu
+	private static final int Dem3Size = 1201; 
+	private static final int DEM3SIZEREDUCED = 301; //1201 / 4 arrondi au supérieur
+	public static final double RADIUS = 6378137.0; /* in meters on the equator */
 	private static final int MaxHigh = 8848;
 	private static final int Blue = 0x0000FF;
 	private static final int Green = 0x00FF00;
@@ -48,6 +50,17 @@ public class TPSpark {
 		return result;
 	}
 
+	public static String convertCoordToCartesian(String coord) {
+		String [] coordExtracted = StringUtils.extractLonLat(coord);
+		Integer lat = Integer.parseInt(coordExtracted[0]);
+		Integer lon = Integer.parseInt(coordExtracted[1]);
+
+		Integer x = (int) (Math.toRadians(lon) * RADIUS);
+		Integer y = (int) ( Math.log(Math.tan(Math.PI / 4 + Math.toRadians(lat) / 2)) * RADIUS);
+
+		String finalCoord = "x" + x.toString() + "y" + y.toString();
+		return finalCoord;
+	}
 
 	public static void main(String[] args) {
 
@@ -60,34 +73,34 @@ public class TPSpark {
 			FileStatus fileStatus=fs.getFileStatus(new Path(file._1));
 			return fileStatus.getModificationTime() < Time.now();
 		});
-		
+
 		JavaPairRDD<String, int[]> pairRddConvert = rddBin.mapToPair(fileToConvert -> {
 			byte [] binary = fileToConvert._2.toArray();
 			int [] high = new int[Dem3Size * Dem3Size];
 
-			for(int i =0, j =0; i < Dem3Size * Dem3Size; i+=2, j++) {
+			for(int i =0; i < binary.length; i+=2) {
 				byte [] toConvert = new byte[2];
 				toConvert [0] = binary[i];
 				toConvert [1] = binary[i + 1];
 				int converted = (toConvert[0] << 8) | toConvert[1];
-				high[j] = converted;
+				high[i/2] = converted;
 				min = Integer.min(converted, min);
 				max = Integer.max(converted, max);
 			}
 
 			return new Tuple2<String, int[]>(fileToConvert._1, high);
 		});
-
+		
 		StringUtils.generatePalette(min, max);
 
-		JavaPairRDD<String, byte[]> pairRddPNGBinary = pairRddConvert.mapToPair(file -> {
+		JavaPairRDD<String, byte[]> pairRDDTilesPng = pairRddConvert.mapToPair(file -> {
 			ByteArrayOutputStream fileCompressed = new ByteArrayOutputStream();
 			ImageOutputStream outputStream = ImageIO.createImageOutputStream(fileCompressed);
-			
+
 			ImageWriter pngWriter = ImageIO.getImageWritersByFormatName("png").next();
-			
+
 			pngWriter.setOutput(outputStream);
-			
+
 			BufferedImage img = new BufferedImage(Dem3Size, Dem3Size, BufferedImage.TYPE_INT_RGB);
 			img.setRGB(0, 0, Dem3Size, Dem3Size, ConvetHighToRGB(file._2), 0, Dem3Size);
 
@@ -98,13 +111,29 @@ public class TPSpark {
 			return new Tuple2<String, byte[]>(file._1, fileCompressed.toByteArray());
 		});
 
-		//Pour debug
-		pairRddPNGBinary.foreach(png -> 	{
+		/*pairRDDTilesPng.foreach(png -> 	{
 			ByteArrayInputStream bis = new ByteArrayInputStream(png._2);
 			BufferedImage img = ImageIO.read(bis);
 			ImageIO.write(img, "png", new File(StringUtils.extractNameFromPath(png._1) + ".png"));
+		});*/
+		
+		pairRDDTilesPng = pairRDDTilesPng.mapToPair( tile ->{
+			String tilePos = tile._1;
+			String[] tilePosParsed = tilePos.split("N:n:S:s:E:e:W:w");
+			int lat = Integer.parseInt(tilePosParsed[0]);
+			int lng = Integer.parseInt(tilePosParsed[1]);
+			int xToAgregate = lat;
+			int yToAgregate = lng;
+			if(lat % 2 != 0)
+				xToAgregate -=1;
+			if( lng % 2 != 0)
+				yToAgregate -= 1;
+			
+			String tileToAggregate = "x" + xToAgregate + "y" + yToAgregate;
+			return new Tuple2<String, byte[]>(tileToAggregate, tile._2);
 		});
 		
+
 		/*
 		pairRddConvert.foreach(file -> {
 			BufferedImage img = new BufferedImage(Dem3Size, Dem3Size, BufferedImage.TYPE_INT_RGB);

@@ -35,15 +35,15 @@ public class TPSpark {
 	private static final int Green = 0x00FF00;
 	private static final int Red = 0xFF0000;
 
-	static int min = -35000;
-	static int max = 9000;
+	static int min = Integer.MAX_VALUE;
+	static int max = Integer.MIN_VALUE;
 
 
-	public static int[] ConvetHighToRGB(int [] high) {
+	public static int[] ConvertHighToRGB(short [] high) {
 		int [] result = new int [high.length];
 
 		for(int i = 0; i < high.length; ++i) {
-			int loged = high[i]; //(int) Math.log(high[i]) / (int) Math.log(MaxHigh);
+			short loged = high[i]; //(int) Math.log(high[i]) / (int) Math.log(MaxHigh);
 			result[i] = StringUtils.getRGBForThisHigh(loged);
 		}
 
@@ -66,6 +66,7 @@ public class TPSpark {
 
 		SparkConf conf = new SparkConf().setAppName("Projet PLE");
 		JavaSparkContext context = new JavaSparkContext(conf);
+		//context.setLogLevel("warn");
 
 		JavaPairRDD<String, PortableDataStream> rddBin=context.binaryFiles(PathDir);
 		rddBin=rddBin.filter(file -> {
@@ -74,23 +75,57 @@ public class TPSpark {
 			return fileStatus.getModificationTime() < Time.now();
 		});
 
-		JavaPairRDD<String, int[]> pairRddConvert = rddBin.mapToPair(fileToConvert -> {
+		
+		JavaPairRDD<String, short[]> pairRddConvert = rddBin.mapToPair(fileToConvert -> {
 			byte [] binary = fileToConvert._2.toArray();
-			int [] high = new int[Dem3Size * Dem3Size];
+			short [] high = new short[Dem3Size * Dem3Size];
 
 			for(int i =0; i < binary.length; i+=2) {
 				byte [] toConvert = new byte[2];
 				toConvert [0] = binary[i];
 				toConvert [1] = binary[i + 1];
-				int converted = (toConvert[0] << 8) | toConvert[1];
+
+				short converted = (short)(((toConvert[0] & 0xff) << 8) | (toConvert[1] & 0xff));
 				high[i/2] = converted;
-				min = Integer.min(converted, min);
-				max = Integer.max(converted, max);
 			}
 
-			return new Tuple2<String, int[]>(fileToConvert._1, high);
+			return new Tuple2<String, short[]>(fileToConvert._1, high);
+		}).mapToPair(fileToRepair -> {
+			short tab[] = fileToRepair._2;
+			for(int i=0; i<tab.length; ++i){
+				if(tab[i]==Short.MIN_VALUE){
+					int sum=0;
+					int count=0;
+					if(i>Dem3Size && tab[i-Dem3Size]!=Short.MIN_VALUE){
+						sum+=tab[i-Dem3Size];
+						count++;
+					}
+					if(i<tab.length-Dem3Size && tab[i+Dem3Size]!=Short.MIN_VALUE){
+						sum+=tab[i+Dem3Size];
+						count++;
+					}
+					if(i%Dem3Size>0 && tab[i-1]!=Short.MIN_VALUE){
+						sum+=tab[i-1];
+						count++;
+					}
+					if(i%Dem3Size<Dem3Size-1 && tab[i+1]!=Short.MIN_VALUE){
+						sum+=tab[i+1];
+						count++;
+					}
+					if(count==0){  //safety first
+						count=1;
+					}
+					tab[i]=(short)(sum/count);
+				}
+				min = (min>tab[i])?tab[i]:min;
+				max = (max<tab[i])?tab[i]:max;
+			}
+
+			return new Tuple2<String, short[]>(fileToRepair._1, tab);
 		});
-		
+
+		pairRddConvert.count();
+
 		StringUtils.generatePalette(min, max);
 
 		JavaPairRDD<String, byte[]> pairRDDTilesPng = pairRddConvert.mapToPair(file -> {
@@ -102,7 +137,7 @@ public class TPSpark {
 			pngWriter.setOutput(outputStream);
 
 			BufferedImage img = new BufferedImage(Dem3Size, Dem3Size, BufferedImage.TYPE_INT_RGB);
-			img.setRGB(0, 0, Dem3Size, Dem3Size, ConvetHighToRGB(file._2), 0, Dem3Size);
+			img.setRGB(0, 0, Dem3Size, Dem3Size, ConvertHighToRGB(file._2), 0, Dem3Size);
 
 			pngWriter.write(new IIOImage(img, null, null));
 
@@ -137,7 +172,7 @@ public class TPSpark {
 		/*
 		pairRddConvert.foreach(file -> {
 			BufferedImage img = new BufferedImage(Dem3Size, Dem3Size, BufferedImage.TYPE_INT_RGB);
-			img.setRGB(0, 0, Dem3Size, Dem3Size, ConvetHighToRGB(file._2), 0, Dem3Size);
+			img.setRGB(0, 0, Dem3Size, Dem3Size, ConvertHighToRGB(file._2), 0, Dem3Size);
 			ImageIO.write(img, "png", new File(StringUtils.extractNameFromPath(file._1) + ".png"));
 		});*/
 

@@ -46,16 +46,6 @@ public final class StringUtils {
 		String [] lonLatparsed = new String[2];
 		lonLatparsed[0]=path.substring(1, 3);
 		lonLatparsed[1]=path.substring(4,7);
-		if(path.contains("s") ||path.contains("S")) {
-			Integer lat = Integer.parseInt(lonLatparsed[0]);
-			lat *= -1;
-			lonLatparsed[0] = lat.toString();
-		}
-		if(path.contains("w") ||path.contains("W")) {
-			Integer lon = Integer.parseInt(lonLatparsed[1]);
-			lon *= -1;
-			lonLatparsed[0] = lon.toString();
-		}
 
 		if (lonLatparsed.length == 2) {
 

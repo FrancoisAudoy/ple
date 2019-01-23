@@ -14,7 +14,11 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.spark.api.java.JavaPairRDD;
+
+import scala.Tuple2;
 
 public final class ConnectionToHBase implements Serializable{
 
@@ -26,13 +30,7 @@ public final class ConnectionToHBase implements Serializable{
 	
 	private ConnectionToHBase() {}
 	
-	public static void createOrOverwrite(Admin admin, HTableDescriptor table) throws IOException {
-		if (admin.tableExists(table.getTableName())) {
-			admin.disableTable(table.getTableName());
-			admin.deleteTable(table.getTableName());
-		}
-		admin.createTable(table);
-	}
+	
 
 	public static void createTable(Connection connection) throws IOException{
 		final Admin admin = connection.getAdmin();
@@ -51,10 +49,32 @@ public final class ConnectionToHBase implements Serializable{
 		admin.close();
 
 	}
+	
+	public static Connection connectTable() throws IOException {
+		Configuration conf = HBaseConfiguration.create();
+		Connection connection = ConnectionFactory.createConnection(conf);
+		
+		return connection;
+	}
+	
+	public void SavesTiles(JavaPairRDD<String, byte[]> rddToSave) {
+		rddToSave.mapToPair(tile ->{ 
+			return new Tuple2<ImmutableBytesWritable, Put>(new ImmutableBytesWritable(),putData(tile._1, tile._2));
+		}).saveAsNewAPIHadoopDataset(getHBaseConf());
+		
+	}
+	
+	private static void createOrOverwrite(Admin admin, HTableDescriptor table) throws IOException {
+		if (admin.tableExists(table.getTableName())) {
+			admin.disableTable(table.getTableName());
+			admin.deleteTable(table.getTableName());
+		}
+		admin.createTable(table);
+	}
 
-	public static Configuration getHBaseConf() {
+	private static Configuration getHBaseConf() {
 		Configuration conf =  HBaseConfiguration.create();
-		conf.set("hbase.zookeeper.qourum", "ripoux:9000");
+		conf.set("hbase.zookeeper.qourum", "young:9000");
 		conf.set("hbase.mapred.outputtable", "TilesAF");
 		conf.set("mapreduce.outputformat.class", "org.apache.hadoop.hbase.mapreduce.TableOutputFormat");
 		conf.set("mapreduce.job.key.class", "org.apache.hadoop.hbase.io.ImmutableBytesWritable");
@@ -63,14 +83,8 @@ public final class ConnectionToHBase implements Serializable{
 		return conf;
 	}
 	
-	public static Connection connectTable() throws IOException {
-		Configuration conf = HBaseConfiguration.create();
-		Connection connection = ConnectionFactory.createConnection(conf);
-		return connection;
-	}
-
-	public static Put putData(Connection connection, String lonLat, byte[] data) throws IllegalArgumentException, IOException {
-		//HTable table = (HTable) connection.getTable(TableName.valueOf(Table_Name));
+	private static Put putData(String lonLat, byte[] data){
+		
 		
 		Put put = new Put(Bytes.toBytes(lonLat));
 
@@ -81,8 +95,6 @@ public final class ConnectionToHBase implements Serializable{
 		put.addColumn(DataFamilyName, ("img").getBytes(), data);
 		
 		return put;
-		/*table.put(put);
-		table.flushCommits();
-		*/
+		
 	}
 }

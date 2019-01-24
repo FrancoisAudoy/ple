@@ -1,7 +1,14 @@
+
+
+
+
 module.exports= class Database{
 
-  async requestSchema(table){
-      return require('http://young:8000/'+table+'/schema');
+  requestSchema(table){
+    let val=0;
+
+      console.log(val);
+      return val;
   }
 
 }

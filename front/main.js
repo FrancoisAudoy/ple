@@ -1,4 +1,5 @@
-var mymap = L.map('mapid').setView([51.505, -0.09], 13);
-L.tileLayer('http://young:3000/tiles/{x}/{y}/{z}', {
-    maxZoom: 1,
+var mymap = L.map('mapid').setView([0.00, 0.00], 6);
+L.tileLayer('http://young:8182/blackple/tiles/{z}/{x}/{y}', {
+    maxZoom: 6,
+    tileSize: 1201
 }).addTo(mymap);

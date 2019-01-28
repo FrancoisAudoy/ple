@@ -2,6 +2,7 @@ package bigdata;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.Serializable;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -9,17 +10,26 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.input.PortableDataStream;
 
 import scala.Tuple2;
 
-public class Convertor {
+public class Convertor implements Serializable{
+
+	private StringUtils strUtils;
+	private static int MIN = -422; //environ le point le plus bas de la terre 
+	private static int MAX = 8850; //environ la hauteur de l'everst
+
+	public Convertor() {
+		strUtils = new StringUtils();
+	}
 
 	public JavaPairRDD<String, short[]> convertHgtToHigh(JavaPairRDD<String, PortableDataStream> pairRddToConvert, int widthSize, int heightSize){
 		return pairRddToConvert.mapToPair(fileToConvert -> {
 			byte [] binary = fileToConvert._2.toArray();
-			short [] high = new short[widthSize * heightSize];
-
+			short [] high = new short[binary.length / 2];
+			
 			for(int i =0; i < binary.length; i+=2) {
 				byte [] toConvert = new byte[2];
 				toConvert [0] = binary[i];
@@ -33,7 +43,32 @@ public class Convertor {
 		}).mapToPair(fileToRepair -> {
 			short tab[] = fileToRepair._2;
 			for(int i=0; i<tab.length; ++i){
-				if(tab[i] == Short.MIN_VALUE){
+				if(tab[i] < MIN){
+					int sum = 0;
+					int count = 0;
+					if(i > widthSize && tab[i-widthSize] != Short.MIN_VALUE){
+						sum+=tab[i-widthSize];
+						count++;
+					}
+					if(i<tab.length-widthSize && tab[i+widthSize] != Short.MIN_VALUE){
+						sum+=tab[i+widthSize];
+						count++;
+					}
+					if(i%widthSize > 0 && tab[i-1] != Short.MIN_VALUE){
+						sum+=tab[i-1];
+						count++;
+					}
+					if(i%widthSize < widthSize - 1 && tab[i+1]!=Short.MIN_VALUE){
+						sum+=tab[i+1];
+						count++;
+					}
+					if(count==0){  //safety first
+						count=1;
+					}
+					tab[i]=(short)(sum/count);
+				}
+				
+				if(tab[i] > MAX) {
 					int sum = 0;
 					int count = 0;
 					if(i > widthSize && tab[i-widthSize] != Short.MIN_VALUE){
@@ -61,9 +96,12 @@ public class Convertor {
 
 			return new Tuple2<String, short[]>(fileToRepair._1, tab);
 		}); 
-		}
+	}
 
 	public JavaPairRDD<String, byte[]> convertToPNG(JavaPairRDD<String, short[]> pairRddToConvert, int widthSize, int heightSize){
+
+		ColorsDefinition colDef = ColorsDefinition.getInstance();
+		
 		return pairRddToConvert.mapToPair(file -> {
 			ByteArrayOutputStream fileCompressed = new ByteArrayOutputStream();
 			ImageOutputStream outputStream = ImageIO.createImageOutputStream(fileCompressed);
@@ -73,7 +111,7 @@ public class Convertor {
 			pngWriter.setOutput(outputStream);
 
 			BufferedImage img = new BufferedImage(widthSize, heightSize, BufferedImage.TYPE_INT_RGB);
-			img.setRGB(0, 0, widthSize, heightSize, ConvertHighToRGB(file._2), 0, widthSize);
+			img.setRGB(0, 0, widthSize, heightSize, ConvertHighToRGB(file._2, colDef), 0, widthSize);
 
 			pngWriter.write(new IIOImage(img, null, null));
 
@@ -82,13 +120,13 @@ public class Convertor {
 			return new Tuple2<String, byte[]>(file._1, fileCompressed.toByteArray());
 		});
 	}
-	
-	private static int[] ConvertHighToRGB(short [] high) {
+
+	private  int[] ConvertHighToRGB(short [] high, ColorsDefinition colDef) {
 		int [] result = new int [high.length];
 
 		for(int i = 0; i < high.length; ++i) {
 			short loged = high[i]; //(int) Math.log(high[i]) / (int) Math.log(MaxHigh);
-			result[i] = StringUtils.getRGBForThisHigh(loged);
+			result[i] = colDef.getRGBForThisHigh(loged);
 		}
 
 		return result;

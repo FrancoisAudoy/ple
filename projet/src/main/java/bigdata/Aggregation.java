@@ -1,5 +1,6 @@
 package bigdata;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
@@ -8,15 +9,17 @@ import org.apache.spark.input.PortableDataStream;
 
 import scala.Tuple2;
 
-public class Aggregation {
+public class Aggregation implements Serializable{
 
-	private static int maxZoomLevel;
+	private  int maxZoomLevel;
 	
-	public static void setMaxZoom(int maxZoom) {
+	private StringUtils strUtils = new StringUtils();
+	
+	public  void setMaxZoom(int maxZoom) {
 		maxZoomLevel = maxZoom;
 	}
 	
-	public static JavaPairRDD<String, PortableDataStream> setAggregation(JavaPairRDD<String, PortableDataStream> pairRddToOrganize) {
+	public  JavaPairRDD<String, PortableDataStream> setAggregation(JavaPairRDD<String, PortableDataStream> pairRddToOrganize) {
 		
 		return pairRddToOrganize.flatMapToPair(file -> {
 
@@ -32,8 +35,8 @@ public class Aggregation {
 		
 	}
 	
-	private static String AggregateLevel1(String latLon) {
-		String [] strLatLon = StringUtils.extractLonLat(latLon);
+	private  String AggregateLevel1(String latLon) {
+		String [] strLatLon = strUtils.extractLonLat(latLon);
 
 		Integer [] intLatLon = new Integer[2];
 
@@ -67,13 +70,13 @@ public class Aggregation {
 		return finalString.toString();
 	}
 
-	private static String AggregateTo(String latLong, int level) {
+	private  String AggregateTo(String latLong, int level) {
 		
-		String strLatLong = StringUtils.extractNameFromPath(latLong);
+		String strLatLong = strUtils.extractNameFromPath(latLong);
 		
 		if(level == 0) {
 			StringBuilder finalString = new StringBuilder(strLatLong.toUpperCase()); 
-			finalString.append("Z0");
+			finalString.append("Z1");
 			return finalString.toString();
 		}
 			
@@ -82,7 +85,7 @@ public class Aggregation {
 			return AggregateLevel1(strLatLong);
 		}
 		
-		String [] strLatLon = StringUtils.extractLonLat(latLong);
+		String [] strLatLon = strUtils.extractLonLat(latLong);
 		Integer [] intLatLon = new Integer [2];
 		
 		intLatLon[0] = Integer.parseInt(strLatLon[0]);

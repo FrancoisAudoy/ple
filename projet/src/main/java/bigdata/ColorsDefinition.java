@@ -7,7 +7,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 
 public class ColorsDefinition implements Serializable {
-	
+
 	private static final long serialVersionUID = 1L;
 	private final int BARLOWMIDDLE=200;
 	private final int BARMIDDLEHIGH=4000;
@@ -22,24 +22,24 @@ public class ColorsDefinition implements Serializable {
 	private final float BRIMINNORMAL =.3f;
 	private final float BRIMAXNORMAL =.5f;
 	private final float BRIMINHIGH=0.1f;
-	
+
 	private int [] colors; 
 	private int zeroAlt;
 	private Broadcast<int []> broadcastedColors;
-	
+
 	private static ColorsDefinition instance;
 
 	private ColorsDefinition() {
 		// TODO Auto-generated constructor stub
 	}
-	
+
 	public static ColorsDefinition getInstance() {
 		if(instance == null)
 			instance = new ColorsDefinition();
-		
+
 		return instance;
 	}
-	
+
 	public void generatePalette(int min, int max) {
 		if(min < 0){
 			zeroAlt = Math.abs(min) + 1;
@@ -64,12 +64,12 @@ public class ColorsDefinition implements Serializable {
 
 		}
 	}
-	
+
 	public int getRGBForThisHigh(short high) {
 		return (high<0)?colors[Math.abs(high)]:colors[high-1 + zeroAlt-1];
 	}
-	
-	
+
+
 	private int augCouleur(int color, int nb, int ite) {
 		float all=(SATMAXNORMAL - SATMINNORMAL)+(BRIMAXNORMAL - BRIMINNORMAL);
 		float ecart=all/nb;

@@ -20,7 +20,7 @@ public final class StringUtils implements Serializable {
 		String [] lonLatparsed = new String[3];
 		lonLatparsed[0]=path.substring(1, 3);
 		lonLatparsed[1]=path.substring(4,7);
-		
+
 		if(path.contains("Z")) 
 			lonLatparsed[2] = getZ(path);
 
@@ -38,14 +38,14 @@ public final class StringUtils implements Serializable {
 
 		return z[0];
 	}
-	
-	
+
+
 	public String [] extractXYZ(String location) {
-		
+
 		String [] xyz = location.split("[XYZ]");
-		
+
 		return xyz;
 	}
 
-	
+
 }

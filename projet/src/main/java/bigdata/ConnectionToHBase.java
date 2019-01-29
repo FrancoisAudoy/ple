@@ -3,9 +3,6 @@ package bigdata;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.commons.configuration.PropertiesConfiguration.PropertiesReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -16,11 +13,8 @@ import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.spark.api.java.JavaPairRDD;
-
-import scala.Tuple2;
 
 @SuppressWarnings("serial")
 public final class ConnectionToHBase implements Serializable{
@@ -36,8 +30,6 @@ public final class ConnectionToHBase implements Serializable{
 	public ConnectionToHBase() {
 		strUtil = new StringUtils();
 	}
-
-
 
 	public void createTable(Connection connection) throws IOException{
 		final Admin admin = connection.getAdmin();
@@ -66,20 +58,37 @@ public final class ConnectionToHBase implements Serializable{
 
 	public void SavesTiles(JavaPairRDD<String, byte[]> rddToSave) throws IOException {
 
-		rddToSave.mapToPair(tile ->{
+		rddToSave.foreachPartition(tiles ->{
 
-				Put put = new Put(Bytes.toBytes(tile._1));
+			Connection connection = connectTable();
+			Table table = connection.getTable(TableName.valueOf(Table_Name));
+
+			ArrayList<Put> allPut = new ArrayList<>();
+
+			tiles.forEachRemaining(tile -> {
+				Put put = new Put(Bytes.toBytes(tile._1.toUpperCase()));
 
 				String [] posParsed = strUtil.extractLonLat(tile._1);
+				try {
+					if(posParsed[0] != null && posParsed[1] != null && posParsed[2] != null) {
 
-				put.addColumn(PositionFamilyName, ("Lon").getBytes(), posParsed[0].getBytes());
-				put.addColumn(PositionFamilyName, ("Lat").getBytes(), posParsed[1].getBytes());
-				put.addColumn(PositionFamilyName, ("Z").getBytes(), posParsed[2].getBytes());
-				put.addColumn(DataFamilyName, ("img").getBytes(), tile._2);
+						put.addColumn(PositionFamilyName, ("Lon").getBytes(), posParsed[0].getBytes());
+						put.addColumn(PositionFamilyName, ("Lat").getBytes(), posParsed[1].getBytes());
+						put.addColumn(PositionFamilyName, ("Z").getBytes(), posParsed[2].getBytes());
+						put.addColumn(DataFamilyName, ("img").getBytes(), tile._2);
 
-				return new Tuple2<ImmutableBytesWritable, Put>(new ImmutableBytesWritable(), put);
+						allPut.add(put);
+					}
 
-		}).saveAsNewAPIHadoopDataset(getHBaseConf());
+				}
+				catch(ArrayIndexOutOfBoundsException e) {
+					throw new RuntimeException(posParsed.length + "");
+				}
+			});
+
+			table.put(allPut);
+
+		});
 
 	}
 
@@ -90,36 +99,4 @@ public final class ConnectionToHBase implements Serializable{
 		}
 		admin.createTable(table);
 	}
-
-	private Configuration getHBaseConf() {
-		Configuration conf =  HBaseConfiguration.create();
-		
-		conf.set("hbase.zookeeper.qourum", "young:9000");
-		conf.set("hbase.mapred.outputtable", "TilesAFTest");
-		conf.set("mapreduce.outputformat.class", "org.apache.hadoop.hbase.mapreduce.TableOutputFormat");
-		conf.set("mapreduce.job.key.class", "org.apache.hadoop.hbase.io.ImmutableBytesWritable");
-		conf.set("mapreduce.job.output.value.class", "org.apache.hadoop.hbase.util.Bytes");
-		conf.set("mapreduce.output.fileoutputformat.outputdir", "tmp");
-		conf.setBoolean("hbase.cluster.distributed", true);
-		return conf;
-	}
-
-//	private void putData(String lonLat, byte[] data) throws IllegalArgumentException, IOException{
-//		Connection connection = connectTable();
-//		Table table = connection.getTable(TableName.valueOf(Table_Name));
-//
-//		Put put = new Put(Bytes.toBytes(lonLat));
-//
-//		String [] posParsed = strUtil.extractLonLat(lonLat);
-//
-//		put.addColumn(PositionFamilyName, ("Lon").getBytes(), posParsed[0].getBytes());
-//		put.addColumn(PositionFamilyName, ("Lat").getBytes(), posParsed[1].getBytes());
-//		put.addColumn(PositionFamilyName, ("Z").getBytes(), "1".getBytes());
-//		put.addColumn(DataFamilyName, ("img").getBytes(), data);
-//
-//		table.put(put);
-//
-//		//return put;
-//
-//	}
 }

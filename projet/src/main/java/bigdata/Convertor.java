@@ -10,26 +10,25 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.input.PortableDataStream;
 
 import scala.Tuple2;
 
+@SuppressWarnings("serial")
 public class Convertor implements Serializable{
 
-	private StringUtils strUtils;
 	private static int MIN = -422; //environ le point le plus bas de la terre 
 	private static int MAX = 8850; //environ la hauteur de l'everst
 
 	public Convertor() {
-		strUtils = new StringUtils();
+		new StringUtils();
 	}
 
 	public JavaPairRDD<String, short[]> convertHgtToHigh(JavaPairRDD<String, PortableDataStream> pairRddToConvert, int widthSize, int heightSize){
-		return pairRddToConvert.mapToPair(fileToConvert -> {
+		return pairRddToConvert.filter(tile -> tile._2.toArray().length == (1201 * 1201)).mapToPair(fileToConvert -> {
 			byte [] binary = fileToConvert._2.toArray();
 			short [] high = new short[binary.length / 2];
-			
+
 			for(int i =0; i < binary.length; i+=2) {
 				byte [] toConvert = new byte[2];
 				toConvert [0] = binary[i];
@@ -67,7 +66,7 @@ public class Convertor implements Serializable{
 					}
 					tab[i]=(short)(sum/count);
 				}
-				
+
 				if(tab[i] > MAX) {
 					int sum = 0;
 					int count = 0;
@@ -101,7 +100,7 @@ public class Convertor implements Serializable{
 	public JavaPairRDD<String, byte[]> convertToPNG(JavaPairRDD<String, short[]> pairRddToConvert, int widthSize, int heightSize){
 
 		ColorsDefinition colDef = ColorsDefinition.getInstance();
-		
+
 		return pairRddToConvert.mapToPair(file -> {
 			ByteArrayOutputStream fileCompressed = new ByteArrayOutputStream();
 			ImageOutputStream outputStream = ImageIO.createImageOutputStream(fileCompressed);
@@ -111,7 +110,7 @@ public class Convertor implements Serializable{
 			pngWriter.setOutput(outputStream);
 
 			BufferedImage img = new BufferedImage(widthSize, heightSize, BufferedImage.TYPE_INT_RGB);
-			img.setRGB(0, 0, widthSize, heightSize, ConvertHighToRGB(file._2, colDef), 0, widthSize);
+			img.setRGB(0, 0, 1201, 1201, ConvertHighToRGB(file._2, colDef), 0, 1201);
 
 			pngWriter.write(new IIOImage(img, null, null));
 

@@ -20,15 +20,28 @@ public class TilesRessources {
 	public Response getTile(@PathParam("x") String x, @PathParam("y") String y, @PathParam("z") String z) throws Exception {
 		ToolRunner.run(HBaseConfiguration.create(), new HBasePicker(), null);
 		int lon=Integer.parseInt(x);
-		String lo=(lon<0)?"S":"N";
-		String lons=(lon<10)?"0"+lon:String.valueOf(lon);
-		int lat=Integer.parseInt(y);
-		String la=(lat<0)?"E":"W";
-		String lats=(lat<100)?"0"+lat:String.valueOf(lat);
-		if(lat<10){
-			lats="0"+lats;
+		String lo="";
+		if(lon<180){
+			lo="E";
+			lon=180-lon;
+		}else{
+			lo="W";
 		}
-		byte[] tile=HBasePicker.get(lo+lons+la+lats+"Z"+1);
+		
+		String lons=(lon<100)?"0"+lon:String.valueOf(lon);
+		if(lon<10){
+			lons="0"+lons;
+		}
+		int lat=Integer.parseInt(y);
+		String la="";
+		if(lat<90){
+			la="N";
+			lat=90-lat;
+		}else{
+			la="S";
+		}
+		String lats=(lon<10)?"0"+lat:String.valueOf(lat);
+		byte[] tile=HBasePicker.get(la+lats+lo+lons+"Z"+1);
 		if(tile!=null){
 			return Response.ok(tile).build();
 		}
